@@ -600,12 +600,10 @@ fun EpochIndexClockView() {
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
         // Main Display Panel
-        Card(
-            modifier = Modifier
-                .fillMaxWidth()
-                .border(1.dp, NeonTeal.copy(alpha = 0.35f), RoundedCornerShape(24.dp)),
-            colors = CardDefaults.cardColors(containerColor = ObsidianSurface.copy(alpha = 0.45f)),
-            shape = RoundedCornerShape(24.dp)
+        LiquidGlassSurface(
+            modifier = Modifier.fillMaxWidth(),
+            cornerRadius = 24.dp,
+            borderColor = NeonTeal
         ) {
             Column(
                 modifier = Modifier

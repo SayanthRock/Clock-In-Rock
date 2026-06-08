@@ -28,6 +28,11 @@ class MainActivity : ComponentActivity() {
       val enableDynamicColor by clockViewModel.enableDynamicColor.collectAsStateWithLifecycle()
       val enableAmoledMode by clockViewModel.enableAmoledMode.collectAsStateWithLifecycle()
       
+      val enableGlassEffect by clockViewModel.enableGlassEffect.collectAsStateWithLifecycle()
+      val glassBlurStrength by clockViewModel.glassBlurStrength.collectAsStateWithLifecycle()
+      val glassTransparency by clockViewModel.glassTransparency.collectAsStateWithLifecycle()
+      val glassBorderThickness by clockViewModel.glassBorderThickness.collectAsStateWithLifecycle()
+      
       MyApplicationTheme(
           themeMode = themeMode,
           isDarkThemeOverride = isAppDarkTheme,
@@ -37,7 +42,11 @@ class MainActivity : ComponentActivity() {
           fontWeight = fontWeight,
           colorProfile = colorProfile,
           enableMonochrome = enableMonochrome,
-          enableAmoledMode = enableAmoledMode
+          enableAmoledMode = enableAmoledMode,
+          enableGlassEffect = enableGlassEffect,
+          glassBlurStrength = glassBlurStrength,
+          glassTransparency = glassTransparency,
+          glassBorderThickness = glassBorderThickness
       ) {
         ClockAppUi(viewModel = clockViewModel)
       }

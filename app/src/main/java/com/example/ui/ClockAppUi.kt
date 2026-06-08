@@ -5104,7 +5104,6 @@ fun Modifier.liquidGlassCard(
     borderColor: Color = Color.White
 ): Modifier {
     val enableGlassEffect by viewModel.enableGlassEffect.collectAsStateWithLifecycle()
-    val glassBlurStrength by viewModel.glassBlurStrength.collectAsStateWithLifecycle()
     val glassTransparency by viewModel.glassTransparency.collectAsStateWithLifecycle()
     val glassBorderThickness by viewModel.glassBorderThickness.collectAsStateWithLifecycle()
 
@@ -5112,21 +5111,18 @@ fun Modifier.liquidGlassCard(
         return this.border(1.dp, Color.White.copy(alpha = 0.15f), RoundedCornerShape(cornerRadius))
     }
 
-    // Apply background blur if supported (and blur strength > 0)
-    val blurModifier = if (glassBlurStrength > 0f) {
-        Modifier.blur(glassBlurStrength.dp)
-    } else {
-        Modifier
-    }
-
+    // In Jetpack Compose, applying Modifier.blur() directly to a general-purpose layout container 
+    // (like Row, Column, Card) will blur all of its nested child layouts (such as text, inputs, and buttons), 
+    // rendering them illegible. To deliver a spectacular, premium "Liquid Glass" beveled look, we employ 
+    // high-fidelity translucent linear gradients coupled with a shining bevel-like border stroke, 
+    // keeping the UI content razor-sharp and perfectly readable.
     return this
-        .then(blurModifier)
         .clip(RoundedCornerShape(cornerRadius))
         .background(
             brush = androidx.compose.ui.graphics.Brush.linearGradient(
                 colors = listOf(
-                    Color.White.copy(alpha = glassTransparency * 1.5f),
-                    Color.White.copy(alpha = glassTransparency * 0.4f)
+                    Color.White.copy(alpha = (glassTransparency * 0.22f).coerceIn(0f, 1f)),
+                    Color.White.copy(alpha = (glassTransparency * 0.05f).coerceIn(0f, 1f))
                 ),
                 start = androidx.compose.ui.geometry.Offset(0f, 0f),
                 end = androidx.compose.ui.geometry.Offset.Infinite
@@ -5136,8 +5132,47 @@ fun Modifier.liquidGlassCard(
             width = glassBorderThickness.dp,
             brush = androidx.compose.ui.graphics.Brush.linearGradient(
                 colors = listOf(
-                    borderColor.copy(alpha = (glassTransparency * 2.8f).coerceAtMost(1f)),
-                    borderColor.copy(alpha = (glassTransparency * 0.7f).coerceAtMost(1f))
+                    borderColor.copy(alpha = (glassTransparency * 0.7f).coerceIn(0f, 1f)),
+                    borderColor.copy(alpha = (glassTransparency * 0.15f).coerceIn(0f, 1f))
+                ),
+                start = androidx.compose.ui.geometry.Offset(0f, 0f),
+                end = androidx.compose.ui.geometry.Offset.Infinite
+            ),
+            shape = RoundedCornerShape(cornerRadius)
+        )
+}
+
+@Composable
+fun Modifier.liquidGlassCard(
+    cornerRadius: androidx.compose.ui.unit.Dp = 16.dp,
+    borderColor: Color = Color.White
+): Modifier {
+    val config = com.example.ui.theme.LocalGlassEffectConfig.current
+    if (!config.enabled) {
+        return this.border(1.dp, Color.White.copy(alpha = 0.15f), RoundedCornerShape(cornerRadius))
+    }
+
+    val glassTransparency = config.transparency
+    val glassBorderThickness = config.borderThickness
+
+    return this
+        .clip(RoundedCornerShape(cornerRadius))
+        .background(
+            brush = androidx.compose.ui.graphics.Brush.linearGradient(
+                colors = listOf(
+                    Color.White.copy(alpha = (glassTransparency * 0.22f).coerceIn(0f, 1f)),
+                    Color.White.copy(alpha = (glassTransparency * 0.05f).coerceIn(0f, 1f))
+                ),
+                start = androidx.compose.ui.geometry.Offset(0f, 0f),
+                end = androidx.compose.ui.geometry.Offset.Infinite
+            )
+        )
+        .border(
+            width = glassBorderThickness.dp,
+            brush = androidx.compose.ui.graphics.Brush.linearGradient(
+                colors = listOf(
+                    borderColor.copy(alpha = (glassTransparency * 0.7f).coerceIn(0f, 1f)),
+                    borderColor.copy(alpha = (glassTransparency * 0.15f).coerceIn(0f, 1f))
                 ),
                 start = androidx.compose.ui.geometry.Offset(0f, 0f),
                 end = androidx.compose.ui.geometry.Offset.Infinite

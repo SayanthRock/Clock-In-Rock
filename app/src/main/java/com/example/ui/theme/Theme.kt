@@ -1,7 +1,14 @@
 package com.example.ui.theme
 
 import android.os.Build
+import android.graphics.RenderEffect
+import android.graphics.Shader
 import androidx.compose.foundation.isSystemInDarkTheme
+import androidx.compose.foundation.background
+import androidx.compose.foundation.border
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.darkColorScheme
 import androidx.compose.material3.dynamicDarkColorScheme
@@ -18,6 +25,11 @@ import androidx.compose.runtime.compositionLocalOf
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.unit.TextUnit
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.asComposeRenderEffect
+import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.text.font.FontStyle
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextDecoration
@@ -267,6 +279,92 @@ private val RockThemeLightColorScheme = lightColorScheme(
 val LocalCustomFontFamily = compositionLocalOf { FontFamily.Monospace }
 val LocalCustomFontWeight = compositionLocalOf { FontWeight.Bold }
 
+data class GlassEffectConfig(
+    val enabled: Boolean = true,
+    val blurStrength: Float = 15f,
+    val transparency: Float = 0.15f,
+    val borderThickness: Float = 1f
+)
+
+val LocalGlassEffectConfig = compositionLocalOf { GlassEffectConfig() }
+
+@Composable
+fun LiquidGlassSurface(
+    modifier: androidx.compose.ui.Modifier = androidx.compose.ui.Modifier,
+    cornerRadius: Dp = 16.dp,
+    borderColor: Color = Color.White,
+    content: @Composable () -> Unit
+) {
+    val config = LocalGlassEffectConfig.current
+    Box(modifier = modifier) {
+        val radius = cornerRadius
+        val trans = config.transparency
+        val borderThick = config.borderThickness
+        val blurVal = config.blurStrength
+
+        if (config.enabled) {
+            // Sibling 1: background layer that performs actual RenderEffect blur on Android 12+ (API 31+)
+            Box(
+                modifier = androidx.compose.ui.Modifier
+                    .matchParentSize()
+                    .clip(RoundedCornerShape(radius))
+                    .graphicsLayer {
+                        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S && blurVal > 0f) {
+                            val blur = RenderEffect.createBlurEffect(
+                                blurVal,
+                                blurVal,
+                                Shader.TileMode.DECAL
+                            )
+                            renderEffect = blur.asComposeRenderEffect()
+                        }
+                    }
+                    .background(
+                        brush = androidx.compose.ui.graphics.Brush.linearGradient(
+                            colors = listOf(
+                                Color.White.copy(alpha = (trans * 0.22f).coerceIn(0f, 1f)),
+                                Color.White.copy(alpha = (trans * 0.05f).coerceIn(0f, 1f))
+                            )
+                        )
+                    )
+            )
+
+            // Sibling 2: shiny metallic/neon border
+            Box(
+                modifier = androidx.compose.ui.Modifier
+                    .matchParentSize()
+                    .border(
+                        width = borderThick.dp,
+                        brush = androidx.compose.ui.graphics.Brush.linearGradient(
+                            colors = listOf(
+                                borderColor.copy(alpha = (trans * 0.7f).coerceIn(0f, 1f)),
+                                borderColor.copy(alpha = (trans * 0.15f).coerceIn(0f, 1f))
+                            )
+                        ),
+                        shape = RoundedCornerShape(radius)
+                    )
+            )
+        } else {
+            // Non-glass fallback theme background
+            Box(
+                modifier = androidx.compose.ui.Modifier
+                    .matchParentSize()
+                    .clip(RoundedCornerShape(radius))
+                    .background(MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.85f))
+                    .border(
+                        width = 1.dp,
+                        color = Color.White.copy(alpha = 0.12f),
+                        shape = RoundedCornerShape(radius)
+                    )
+            )
+        }
+
+        // Sibling 3: Crisp, perfectly readable foreground content container
+        Box(modifier = androidx.compose.ui.Modifier) {
+            content()
+        }
+    }
+}
+
 @Composable
 fun ThemedText(
     text: String,
@@ -323,6 +421,10 @@ fun MyApplicationTheme(
   colorProfile: String = "Rock Theme",
   enableMonochrome: Boolean = false,
   enableAmoledMode: Boolean = false,
+  enableGlassEffect: Boolean = true,
+  glassBlurStrength: Float = 15f,
+  glassTransparency: Float = 0.15f,
+  glassBorderThickness: Float = 1f,
   content: @Composable () -> Unit,
 ) {
   val darkTheme = isDarkThemeOverride ?: when (themeMode) {
@@ -431,7 +533,13 @@ fun MyApplicationTheme(
   CompositionLocalProvider(
       LocalDensity provides Density(density = localDensity.density, fontScale = localDensity.fontScale * fontScaleMult),
       LocalCustomFontFamily provides ff,
-      LocalCustomFontWeight provides fw
+      LocalCustomFontWeight provides fw,
+      LocalGlassEffectConfig provides GlassEffectConfig(
+          enabled = enableGlassEffect,
+          blurStrength = glassBlurStrength,
+          transparency = glassTransparency,
+          borderThickness = glassBorderThickness
+      )
   ) {
       MaterialTheme(colorScheme = colorScheme, typography = Typography, content = content)
   }

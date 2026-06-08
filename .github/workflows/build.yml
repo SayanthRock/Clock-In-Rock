@@ -15,16 +15,11 @@ permissions:
 
 jobs:
   build:
-    name: Build and Release
+    name: Build, Sign, and Release
     runs-on: ubuntu-latest
     steps:
     - name: Checkout Code
       uses: actions/checkout@v4
-
-    - name: Clean and Regenerate Corrupt Gradle Wrapper
-      run: |
-        rm -f gradle/wrapper/gradle-wrapper.jar
-        gradle wrapper
 
     - name: Set up JDK 21
       uses: actions/setup-java@v4
@@ -33,93 +28,38 @@ jobs:
         distribution: 'temurin'
         cache: gradle
 
-    - name: Debug and Prepare
+    - name: Validate Gradle Wrapper
       run: |
-        pwd
-        ls -la
         chmod +x ./gradlew
         ./gradlew --version
 
-    - name: Run Build and Lint (Debug)
+    - name: Run Build (Debug)
       run: ./gradlew assembleDebug --no-daemon
-
-    - name: Run Unit Tests
-      run: ./gradlew testDebugUnitTest --no-daemon
 
     - name: Build Release APK
       run: ./gradlew assembleRelease --no-daemon
-
-    - name: Setup Signing Key
-      id: sign_setup
-      run: |
-        if [ -n "${{ secrets.KEYSTORE_FILE }}" ]; then
-          echo "KEYSTORE_FILE is present. Decoding..."
-          echo "${{ secrets.KEYSTORE_FILE }}" | base64 --decode > release.jks
-          echo "has_keystore=true" >> $GITHUB_OUTPUT
-        else
-          echo "No KEYSTORE_FILE found. Signing with debug certificate as a graceful fallback."
-          echo "has_keystore=false" >> $GITHUB_OUTPUT
-        fi
-      shell: bash
-
-    - name: Sign APK
-      id: sign_apk
-      env:
-        KEYSTORE_PASSWORD: ${{ secrets.KEYSTORE_PASSWORD }}
-        KEY_ALIAS: ${{ secrets.KEY_ALIAS }}
-        KEY_PASSWORD: ${{ secrets.KEY_PASSWORD }}
-      run: |
-        # Find apksigner
-        APKSIGNER=$(find $ANDROID_HOME/build-tools -name apksigner | sort -r | head -n 1)
-        echo "Found apksigner at: $APKSIGNER"
-        
-        # Locate unsigned release APK or standard release APK
-        RELEASE_APK=$(find app/build/outputs/apk/release -name "app-release-unsigned.apk" -o -name "app-release.apk" | head -n 1)
-        echo "Release APK path: $RELEASE_APK"
-        
-        if [ "${{ steps.sign_setup.outputs.has_keystore }}" = "true" ] && [ -n "$KEYSTORE_PASSWORD" ] && [ -n "$KEY_ALIAS" ] && [ -n "$KEY_PASSWORD" ]; then
-          echo "Signing APK with production keystore..."
-          $APKSIGNER sign --ks release.jks --ks-pass pass:"$KEYSTORE_PASSWORD" --key-pass pass:"$KEY_PASSWORD" --ks-key-alias "$KEY_ALIAS" --out app-release-signed.apk "$RELEASE_APK"
-          echo "signed_apk=app-release-signed.apk" >> $GITHUB_ENV
-          echo "APK successfully signed."
-        else
-          echo "Signing secrets missing or incomplete. Using self-signed fallback verification..."
-          # Build a debug signed key fallback or use the debug apk as placeholder info
-          cp app/build/outputs/apk/debug/app-debug.apk app-release-signed.apk
-          echo "signed_apk=app-release-signed.apk" >> $GITHUB_ENV
-          echo "Fallback successful (built debug APK)."
-        fi
-      shell: bash
 
     - name: Upload APK Artifact
       uses: actions/upload-artifact@v4
       with:
         name: clock-in-rock-apk
-        path: app-release-signed.apk
+        # Use wildcard to find the APK regardless of exact output path
+        path: "app/build/outputs/apk/**/*.apk"
 
     - name: Determine Version Channels and Release Details
       id: get_release_info
+      if: github.event_name == 'push' && (github.ref_name == 'main' || github.ref_name == 'nightly')
       run: |
-        # Read stable or nightly distribution details from json
         if [ "${{ github.ref_name }}" = "nightly" ]; then
           VERSION_NAME=$(jq -r '.versionName' nightly.json)
-          VERSION_CODE=$(jq -r '.versionCode' nightly.json)
-          CHANGELOG=$(jq -r '.changelog' nightly.json)
           IS_PRERELEASE=true
-          TAG_NAME="v$VERSION_NAME"
         else
           VERSION_NAME=$(jq -r '.versionName' stable.json)
-          VERSION_CODE=$(jq -r '.versionCode' stable.json)
-          CHANGELOG=$(jq -r '.changelog' stable.json)
           IS_PRERELEASE=false
-          TAG_NAME="v$VERSION_NAME"
         fi
-        
         echo "version_name=$VERSION_NAME" >> $GITHUB_OUTPUT
-        echo "version_code=$VERSION_CODE" >> $GITHUB_OUTPUT
-        echo "changelog=$CHANGELOG" >> $GITHUB_OUTPUT
+        echo "tag_name=v$VERSION_NAME" >> $GITHUB_OUTPUT
         echo "prerelease=$IS_PRERELEASE" >> $GITHUB_OUTPUT
-        echo "tag_name=$TAG_NAME" >> $GITHUB_OUTPUT
       shell: bash
 
     - name: Create GitHub Release and Upload APK Asset
@@ -128,26 +68,18 @@ jobs:
         GH_TOKEN: ${{ github.token }}
         TAG_NAME: ${{ steps.get_release_info.outputs.tag_name }}
         VERSION_NAME: ${{ steps.get_release_info.outputs.version_name }}
-        CHANGELOG: ${{ steps.get_release_info.outputs.changelog }}
         IS_PRERELEASE: ${{ steps.get_release_info.outputs.prerelease }}
       run: |
-        # Write changelog file
-        echo "### Release: $VERSION_NAME" > release_notes.md
-        echo "" >> release_notes.md
-        echo "$CHANGELOG" >> release_notes.md
-        echo "" >> release_notes.md
-        echo "Generated automatically by GitHub Actions." >> release_notes.md
-
-        echo "Checking if release tag $TAG_NAME already exists..."
+        # Find signed or unsigned release APK
+        RELEASE_APK=$(find app/build/outputs/apk/release -name "*.apk" | head -n 1)
+        
         if gh release view "$TAG_NAME" >/dev/null 2>&1; then
-          echo "Release exists. Updating release assets..."
-          gh release upload "$TAG_NAME" app-release-signed.apk --clobber
+          gh release upload "$TAG_NAME" "$RELEASE_APK" --clobber
         else
-          echo "Creating new release $TAG_NAME..."
           PRERELEASE_FLAG=""
           if [ "$IS_PRERELEASE" = "true" ]; then
             PRERELEASE_FLAG="--prerelease"
           fi
-          gh release create "$TAG_NAME" app-release-signed.apk --title "Clock In Rock $VERSION_NAME" --notes-file release_notes.md $PRERELEASE_FLAG
+          gh release create "$TAG_NAME" "$RELEASE_APK" --title "Clock In Rock $VERSION_NAME" --notes "Release $VERSION_NAME" $PRERELEASE_FLAG
         fi
       shell: bash

@@ -1,0 +1,6 @@
+{
+  "versionCode": 2,
+  "versionName": "1.1.0-nightly",
+  "changelog": "Nightly Build: Added concurrent multiple background timers, immersive Liquid Glass customizer sliders, and system alarm notifications.",
+  "apkUrl": "https://raw.githubusercontent.com/sayanthsmeppayurvaliyaparambil/ClockInRock/main/app-release-nightly.apk"
+}

@@ -1,0 +1,59 @@
+<?xml version="1.0" encoding="utf-8"?>
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="108dp"
+    android:height="108dp"
+    android:viewportWidth="108"
+    android:viewportHeight="108">
+    
+    <!-- Outer Cyber Hexagon / Pulse ring -->
+    <path
+        android:pathData="M 54,20 L 83.4,37 L 83.4,71 L 54,88 L 24.6,71 L 24.6,37 Z"
+        android:strokeColor="#1E00E5FF"
+        android:strokeWidth="1.5"
+        android:fillColor="#0900E5FF" />
+
+    <!-- Futuristic Chronometer Outer Segmented Ring -->
+    <path
+        android:pathData="M 54,24 A 30 30 0 1 1 53.99,24"
+        android:strokeColor="#00E5FF"
+        android:strokeWidth="4"
+        android:strokeLineCap="round"
+        android:strokeLineJoin="round" />
+
+    <!-- Dynamic ticks inside outer ring -->
+    <path
+        android:pathData="M 54,24 L 54,29 M 54,84 L 54,79 M 24,54 L 29,54 M 84,54 L 79,54 M 32.8,32.8 L 36.3,36.3 M 75.2,75.2 L 71.7,71.7 M 32.8,75.2 L 36.3,71.7 M 75.2,32.8 L 71.7,36.3"
+        android:strokeColor="#4CAF50"
+        android:strokeWidth="2.5"
+        android:strokeLineCap="round" />
+
+    <!-- Inner Core Dial Ring -->
+    <path
+        android:pathData="M 54,38 A 16 16 0 1 1 53.99,38"
+        android:strokeColor="#4CAF50"
+        android:strokeWidth="2"
+        android:fillColor="#15121212" />
+
+    <!-- Chronograph Ticking Hands & Hub -->
+    <path
+        android:pathData="M 54,54 L 54,34"
+        android:strokeColor="#00E5FF"
+        android:strokeWidth="3.5"
+        android:strokeLineCap="round" />
+
+    <path
+        android:pathData="M 54,55 L 67,46"
+        android:strokeColor="#FFFF9900"
+        android:strokeWidth="2"
+        android:strokeLineCap="round" />
+
+    <!-- Solid White Hub (Circle equivalent path) -->
+    <path
+        android:pathData="M 54,49 A 5,5 0 1,1 53.99,49 Z"
+        android:fillColor="#FFFFFF" />
+        
+    <!-- Cyan Glowing Inner Pin (Circle equivalent path) -->
+    <path
+        android:pathData="M 54,51.5 A 2.5,2.5 0 1,1 53.99,51.5 Z"
+        android:fillColor="#00E5FF" />
+</vector>

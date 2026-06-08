@@ -28,16 +28,12 @@ jobs:
         distribution: 'temurin'
         cache: gradle
 
-    - name: Debug Repository
+    - name: Debug and Prepare
       run: |
         pwd
         ls -la
-        ls -la gradle/wrapper/
-        echo "Checking for gradlew..."
-        if [ -f gradlew ]; then echo "gradlew exists"; else echo "gradlew NOT found"; fi
-
-    - name: Grant execute permission for gradlew
-      run: chmod +x gradlew
+        chmod +x ./gradlew
+        ./gradlew --version
 
     - name: Run Build and Lint (Debug)
       run: ./gradlew assembleDebug --no-daemon

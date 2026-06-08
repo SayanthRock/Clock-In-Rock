@@ -21,6 +21,11 @@ jobs:
     - name: Checkout Code
       uses: actions/checkout@v4
 
+    - name: Force Clean Gradle Wrapper
+      run: |
+        rm -f gradle/wrapper/gradle-wrapper.jar
+        gradle wrapper --gradle-version 8.10
+
     - name: Set up JDK 21
       uses: actions/setup-java@v4
       with:
